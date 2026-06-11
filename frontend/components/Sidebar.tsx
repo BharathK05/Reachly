@@ -9,81 +9,43 @@ import {
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 
-const PLATFORM_ITEMS = [
-  { href: "/dashboard",  label: "Dashboard",       icon: LayoutDashboard },
-  { href: "/studio",     label: "Campaign Studio",  icon: Wand2 },
-  { href: "/campaigns",  label: "My Campaigns",     icon: Layers },
+const NAV_GROUPS = [
+  {
+    label: "Platform",
+    items: [
+      { href:"/dashboard",  label:"Dashboard",       icon:LayoutDashboard },
+      { href:"/studio",     label:"Campaign Studio",  icon:Wand2 },
+      { href:"/campaigns",  label:"My Campaigns",     icon:Layers },
+    ],
+  },
+  {
+    label: "Campaign",
+    items: [
+      { href:"/timeline",   label:"Agent Timeline",   icon:GitBranch },
+      { href:"/monitor",    label:"Live Monitor",     icon:Radio },
+      { href:"/insights",   label:"Insights",         icon:BarChart3 },
+    ],
+  },
 ];
-
-const CAMPAIGN_ITEMS = [
-  { href: "/timeline",   label: "Agent Timeline",   icon: GitBranch },
-  { href: "/monitor",    label: "Live Monitor",      icon: Radio },
-  { href: "/insights",   label: "Insights",          icon: BarChart3 },
-];
-
-function NavGroup({
-  label,
-  items,
-  collapsed: sidebarCollapsed,
-  isActive,
-}: {
-  label: string;
-  items: { href: string; label: string; icon: React.ElementType }[];
-  collapsed: boolean;
-  isActive: (href: string) => boolean;
-}) {
-  const [open, setOpen] = useState(true);
-
-  return (
-    <div>
-      {!sidebarCollapsed && (
-        <button
-          onClick={() => setOpen(!open)}
-          className="nav-group-header"
-          style={{ width: "100%", background: "none", border: "none", cursor: "pointer" }}
-          aria-expanded={open}
-        >
-          <span className="nav-group-label">{label}</span>
-          <ChevronDown
-            size={12}
-            className={`nav-group-chevron ${open ? "open" : "closed"}`}
-          />
-        </button>
-      )}
-
-      <div
-        className={`collapsible-body ${open || sidebarCollapsed ? "open" : "closed"}`}
-        style={{ maxHeight: open || sidebarCollapsed ? "400px" : "0" }}
-      >
-        {items.map(({ href, label: itemLabel, icon: Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className={`nav-item ${isActive(href) ? "active" : ""}`}
-            aria-current={isActive(href) ? "page" : undefined}
-            title={sidebarCollapsed ? itemLabel : undefined}
-          >
-            <Icon className="nav-icon" />
-            <span className="nav-label-text">{itemLabel}</span>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, toggle } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
+    Platform: true,
+    Campaign: true,
+  });
 
   const isActive = (href: string) => {
-    if (href === "/timeline")  return pathname.startsWith("/timeline");
-    if (href === "/monitor")   return pathname.startsWith("/monitor");
-    if (href === "/insights")  return pathname.startsWith("/insights");
-    if (href === "/campaigns") return pathname.startsWith("/campaigns");
-    return pathname === href;
+    if (href === "/dashboard")  return pathname === "/dashboard";
+    if (href === "/studio")     return pathname === "/studio";
+    if (href === "/campaigns")  return pathname.startsWith("/campaigns");
+    if (href === "/timeline")   return pathname.startsWith("/timeline");
+    if (href === "/monitor")    return pathname.startsWith("/monitor");
+    if (href === "/insights")   return pathname.startsWith("/insights");
+    return false;
   };
 
   const handleLogout = async () => {
@@ -94,67 +56,81 @@ export default function Sidebar() {
 
   return (
     <nav
-      className={`sidebar ${collapsed ? "collapsed" : ""}`}
+      className={`sidebar${collapsed ? " collapsed" : ""}`}
       role="navigation"
       aria-label="Main navigation"
     >
-      {/* Collapse toggle button */}
+      {/* Collapse toggle */}
       <button
         className="sidebar-collapse-btn"
         onClick={() => setCollapsed(!collapsed)}
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         title={collapsed ? "Expand" : "Collapse"}
       >
-        {collapsed
-          ? <PanelLeftOpen size={12} />
-          : <PanelLeftClose size={12} />
-        }
+        {collapsed ? <PanelLeftOpen size={11} /> : <PanelLeftClose size={11} />}
       </button>
 
       <div className="sidebar-inner">
-        {/* Logo */}
+        {/* ── Logo ── */}
         <div className="sidebar-logo">
           <div className="sidebar-logo-icon">
             <Zap size={16} color="white" />
           </div>
-          {!collapsed && (
-            <div>
-              <div className="sidebar-logo-text">Reachly</div>
-              <div className="sidebar-logo-sub">Starbucks India</div>
-            </div>
-          )}
+          <div style={{ overflow:"hidden", minWidth:0 }}>
+            <div className="sidebar-logo-text">Reachly</div>
+            <div className="sidebar-logo-sub">Starbucks India</div>
+          </div>
         </div>
 
-        {/* Nav groups */}
+        {/* ── Navigation ── */}
         <div className="sidebar-nav">
-          <NavGroup
-            label="Platform"
-            items={PLATFORM_ITEMS}
-            collapsed={collapsed}
-            isActive={isActive}
-          />
-          <div style={{ height: 4 }} />
-          <NavGroup
-            label="Campaign"
-            items={CAMPAIGN_ITEMS}
-            collapsed={collapsed}
-            isActive={isActive}
-          />
+          {NAV_GROUPS.map(({ label, items }) => (
+            <div key={label}>
+              {/* Group header — hidden via CSS in collapsed mode */}
+              <button
+                className="nav-group-header"
+                onClick={() => setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }))}
+                aria-expanded={openGroups[label]}
+                style={{ width:"100%", background:"none", border:"none", cursor:"pointer" }}
+              >
+                <span className="nav-group-label">{label}</span>
+                <ChevronDown
+                  size={11}
+                  className={`nav-group-chevron ${openGroups[label] ? "open" : "closed"}`}
+                />
+              </button>
+
+              {/* Items — wrap in collapsible for expand/collapse, always visible in collapsed sidebar */}
+              <div style={{
+                overflow: "hidden",
+                maxHeight: collapsed || openGroups[label] ? 400 : 0,
+                transition: "max-height 0.25s cubic-bezier(0.4,0,0.2,1)",
+              }}>
+                {items.map(({ href, label: itemLabel, icon: Icon }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={`nav-item${isActive(href) ? " active" : ""}`}
+                    aria-current={isActive(href) ? "page" : undefined}
+                    title={collapsed ? itemLabel : undefined}
+                  >
+                    <Icon className="nav-icon" />
+                    <span className="nav-label-text">{itemLabel}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
 
-        {/* User card */}
+        {/* ── User card ── */}
         <div className="user-card">
           <div className="user-avatar" title="Admin">A</div>
-
-          {!collapsed && (
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="user-name">Admin</div>
-              <div className="user-role">Reachly v1.0</div>
-            </div>
-          )}
-
+          <div style={{ flex:1, minWidth:0, overflow:"hidden" }}>
+            <div className="user-name">Admin</div>
+            <div className="user-role">Reachly v1.0</div>
+          </div>
           <div className="user-actions">
-            {/* Theme toggle */}
             <button
               className="icon-btn"
               onClick={toggle}
@@ -162,13 +138,8 @@ export default function Sidebar() {
               title={theme === "dark" ? "Light mode" : "Dark mode"}
               id="theme-toggle-btn"
             >
-              {theme === "dark"
-                ? <Sun size={13} />
-                : <Moon size={13} />
-              }
+              {theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
             </button>
-
-            {/* Logout */}
             <button
               className="icon-btn"
               onClick={handleLogout}

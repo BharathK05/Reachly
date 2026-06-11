@@ -105,3 +105,26 @@ export async function generateInsights(campaignId: string): Promise<InsightsResp
   }
   return res.json();
 }
+
+// ── Customers ─────────────────────────────────────────────────────────────────
+
+export async function fetchCustomers(search = "", limit = 100, offset = 0) {
+  const params = new URLSearchParams({ search, limit: String(limit), offset: String(offset) });
+  const res = await fetch(`${BASE_URL}/api/data/customers?${params}`);
+  if (!res.ok) throw new Error("Failed to fetch customers");
+  return res.json() as Promise<{ customers: Record<string, unknown>[]; total: number }>;
+}
+
+export async function fetchCustomerDetail(customerId: string) {
+  const res = await fetch(`${BASE_URL}/api/data/customers/${customerId}`);
+  if (!res.ok) throw new Error("Failed to fetch customer");
+  return res.json();
+}
+
+export async function fetchOrders(search = "", limit = 100, offset = 0) {
+  const params = new URLSearchParams({ search, limit: String(limit), offset: String(offset) });
+  const res = await fetch(`${BASE_URL}/api/data/orders?${params}`);
+  if (!res.ok) throw new Error("Failed to fetch orders");
+  return res.json() as Promise<{ orders: Record<string, unknown>[]; total: number }>;
+}
+

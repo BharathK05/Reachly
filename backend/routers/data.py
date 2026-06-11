@@ -205,3 +205,80 @@ async def get_stats():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch stats: {e}")
+
+
+@router.get("/customers")
+async def list_customers(search: str = "", limit: int = 100, offset: int = 0):
+    """List customers with optional search across name, email, phone, tier."""
+    supabase = get_supabase()
+    try:
+        query = supabase.table("customers").select(
+            "id, name, email, phone, tier, total_spend, order_count, days_since_last_purchase, last_purchase_date"
+        )
+        # Server-side search across name, email, phone
+        if search:
+            query = query.or_(
+                f"name.ilike.%{search}%,email.ilike.%{search}%,phone.ilike.%{search}%,tier.ilike.%{search}%"
+            )
+        result = query.order("total_spend", desc=True).range(offset, offset + limit - 1).execute()
+        customers = result.data or []
+
+        # Total count (separate query for pagination)
+        count_query = supabase.table("customers").select("id", count="exact")
+        if search:
+            count_query = count_query.or_(
+                f"name.ilike.%{search}%,email.ilike.%{search}%,phone.ilike.%{search}%,tier.ilike.%{search}%"
+            )
+        count_res = count_query.execute()
+        total = count_res.count or len(customers)
+
+        return {"customers": customers, "total": total}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch customers: {e}")
+
+
+@router.get("/customers/{customer_id}")
+async def get_customer(customer_id: str):
+    """Get a single customer with their recent orders."""
+    supabase = get_supabase()
+    try:
+        cust_res = supabase.table("customers").select("*").eq("id", customer_id).single().execute()
+        customer = cust_res.data
+        if not customer:
+            raise HTTPException(status_code=404, detail="Customer not found")
+
+        orders_res = (
+            supabase.table("orders")
+            .select("id, product, qty, price, order_date")
+            .eq("customer_id", customer_id)
+            .order("order_date", desc=True)
+            .limit(20)
+            .execute()
+        )
+        return {"customer": customer, "orders": orders_res.data or []}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch customer: {e}")
+
+
+@router.get("/orders")
+async def list_orders(search: str = "", limit: int = 100, offset: int = 0):
+    """List recent orders with customer name."""
+    supabase = get_supabase()
+    try:
+        # Join with customers for name
+        query = supabase.table("orders").select(
+            "id, product, qty, price, order_date, customer_id, customers(name, tier)"
+        )
+        if search:
+            query = query.ilike("product", f"%{search}%")
+        result = query.order("order_date", desc=True).range(offset, offset + limit - 1).execute()
+
+        count_res = supabase.table("orders").select("id", count="exact").execute()
+        total = count_res.count or 0
+
+        return {"orders": result.data or [], "total": total}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch orders: {e}")
+

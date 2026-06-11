@@ -51,6 +51,17 @@ async def delete_campaign(campaign_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to delete campaign: {e}")
 
 
+@router.get("/{campaign_id}")
+async def get_campaign(campaign_id: str):
+    """Return a single campaign's full data (for timeline cache load)."""
+    supabase = get_supabase()
+    try:
+        result = supabase.table("campaigns").select("*").eq("id", campaign_id).single().execute()
+        return result.data
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Campaign not found: {e}")
+
+
 @router.get("/{campaign_id}/run")
 async def run_campaign_sse(campaign_id: str):
     """SSE endpoint — fetch campaign, run orchestrator, stream agent events."""
@@ -134,10 +145,11 @@ async def approve_campaign(campaign_id: str):
 
     callback_url = os.environ.get("CRM_CALLBACK_URL", "http://localhost:8000/api/events/callback")
 
-    # Fire and forget dispatch to channel service
+    # Dispatch to channel service
+    channel_error = None
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            await client.post(
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(
                 f"{CHANNEL_SERVICE_URL}/send",
                 json={
                     "campaign_id": campaign_id,
@@ -145,10 +157,17 @@ async def approve_campaign(campaign_id: str):
                     "callback_url": callback_url,
                 },
             )
-    except Exception:
-        pass  # Channel service is fire-and-forget
+            if resp.status_code >= 400:
+                channel_error = f"Channel service returned {resp.status_code}"
+    except Exception as e:
+        channel_error = str(e)
 
-    return {"status": "approved", "dispatched": len(recipients)}
+    return {
+        "status": "approved",
+        "dispatched": len(recipients),
+        "channel_service_ok": channel_error is None,
+        "channel_error": channel_error,
+    }
 
 
 @router.get("/{campaign_id}/monitor")
@@ -161,7 +180,11 @@ async def monitor_campaign(campaign_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch logs: {e}")
 
-    summary = {"sent": 0, "delivered": 0, "opened": 0, "clicked": 0, "failed": 0, "pending": 0}
+    summary = {
+        "sent": 0, "delivered": 0, "read": 0,
+        "opened": 0, "clicked": 0, "converted": 0,
+        "failed": 0, "pending": 0
+    }
     for log in logs:
         status = log.get("status", "pending")
         if status in summary:
@@ -172,9 +195,51 @@ async def monitor_campaign(campaign_id: str):
     return {"logs": logs, "summary": summary}
 
 
+@router.get("/{campaign_id}/insights")
+async def get_cached_insights(campaign_id: str):
+    """Return cached insights if they exist, so navigating back doesn't re-generate."""
+    supabase = get_supabase()
+    try:
+        res = supabase.table("campaigns").select("insights_cache, goal, channel, budget, audience_size, estimated_cost, predictions").eq("id", campaign_id).single().execute()
+        campaign = res.data
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Campaign not found: {e}")
+
+    if not campaign.get("insights_cache"):
+        return {"cached": False, "insights": None, "campaign_snapshot": None}
+
+    # Re-fetch live summary for snapshot
+    try:
+        logs_res = supabase.table("communication_logs").select("status").eq("campaign_id", campaign_id).execute()
+        logs = logs_res.data or []
+    except Exception:
+        logs = []
+
+    summary = {"sent":0,"delivered":0,"read":0,"opened":0,"clicked":0,"converted":0,"failed":0}
+    for log in logs:
+        s = log.get("status","pending")
+        if s in summary:
+            summary[s] += 1
+
+    predictions = campaign.get("predictions") or {}
+    return {
+        "cached": True,
+        "insights": campaign["insights_cache"],
+        "campaign_snapshot": {
+            "goal": campaign.get("goal"),
+            "channel": campaign.get("channel"),
+            "budget": campaign.get("budget"),
+            "audience_size": campaign.get("audience_size"),
+            "estimated_cost": campaign.get("estimated_cost"),
+            "predictions": predictions,
+            "actual": summary,
+        },
+    }
+
+
 @router.post("/{campaign_id}/insights")
 async def generate_insights(campaign_id: str):
-    """Generate natural language insights from campaign results using Gemini."""
+    """Generate natural language insights and cache them in the DB."""
     supabase = get_supabase()
 
     try:
@@ -184,14 +249,14 @@ async def generate_insights(campaign_id: str):
         raise HTTPException(status_code=404, detail=f"Campaign not found: {e}")
 
     try:
-        logs_res = supabase.table("communication_logs").select("*").eq("campaign_id", campaign_id).execute()
+        logs_res = supabase.table("communication_logs").select("status").eq("campaign_id", campaign_id).execute()
         logs = logs_res.data or []
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch logs: {e}")
 
-    summary = {"sent": 0, "delivered": 0, "opened": 0, "clicked": 0, "failed": 0}
+    summary = {"sent":0,"delivered":0,"read":0,"opened":0,"clicked":0,"converted":0,"failed":0}
     for log in logs:
-        status = log.get("status", "pending")
+        status = log.get("status","pending")
         if status in summary:
             summary[status] += 1
 
@@ -217,17 +282,20 @@ Analyze this campaign and write a structured markdown report.
 ## Actual Delivery Results
 - Sent: {summary['sent']}
 - Delivered: {summary['delivered']}
+- Read: {summary['read']}
 - Opened: {summary['opened']}
 - Clicked: {summary['clicked']}
+- Converted (attributed orders): {summary['converted']}
 - Failed: {summary['failed']}
 
 Write a 4-section markdown report:
 1. **Executive Summary** (2-3 sentences)
-2. **Performance Analysis** (compare predicted vs actual, with % figures)
-3. **Key Insights** (3 bullet points)
+2. **Performance Analysis** (compare predicted vs actual, include read/click/conversion rates as % with actual numbers)
+3. **Key Insights** (3 bullet points — include attribution data if conversions > 0)
 4. **Recommendations** (2-3 actionable next steps for Starbucks India)
 
-Use proper markdown headings, bullet points, and bold text for numbers.
+Use proper markdown headings (##), bullet points, and **bold** for key numbers.
+Keep it concise — no waffle.
 """
 
     try:
@@ -235,7 +303,14 @@ Use proper markdown headings, bullet points, and bold text for numbers.
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate insights: {e}")
 
+    # Save insights to DB so navigation back doesn't re-generate
+    try:
+        supabase.table("campaigns").update({"insights_cache": insights}).eq("id", campaign_id).execute()
+    except Exception:
+        pass  # non-fatal — still return the insights
+
     return {
+        "cached": False,
         "insights": insights,
         "campaign_snapshot": {
             "goal": campaign.get("goal"),

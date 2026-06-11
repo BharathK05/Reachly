@@ -34,53 +34,73 @@ class SendRequest(BaseModel):
 
 
 async def _fire_event(client: httpx.AsyncClient, callback_url: str, log_id: str, event_type: str):
-    """POST a single event to the CRM callback URL."""
-    try:
-        await client.post(
-            callback_url,
-            json={"log_id": log_id, "event_type": event_type},
-            timeout=10.0,
-        )
-    except Exception:
-        pass  # Best-effort delivery
+    """POST a single event to the CRM callback URL with retry."""
+    for attempt in range(3):
+        try:
+            resp = await client.post(
+                callback_url,
+                json={"log_id": log_id, "event_type": event_type},
+                timeout=10.0,
+            )
+            if resp.status_code < 500:
+                return  # success or 4xx (don't retry)
+        except Exception:
+            pass
+        if attempt < 2:
+            await asyncio.sleep(0.5 * (attempt + 1))
 
 
 async def _simulate_recipient(client: httpx.AsyncClient, callback_url: str, recipient: Recipient):
-    """Simulate the delivery journey for one recipient."""
+    """
+    Simulate the full delivery journey for one recipient.
+
+    Funnel:
+      sent → [5% fail] → delivered → [50% read] → [70% opened] → [30% clicked] → [15% converted]
+    """
     log_id = recipient.log_id
 
-    # Random initial delay (0.5–3s) to stagger events
-    await asyncio.sleep(random.uniform(0.5, 3.0))
+    # Stagger start time so events don't all fire at once
+    await asyncio.sleep(random.uniform(0.3, 2.5))
 
-    # Sent
+    # 1. Sent
     await _fire_event(client, callback_url, log_id, "sent")
 
-    # 5% chance of failure
+    # 2. 5% failure
     if random.random() < 0.05:
         await asyncio.sleep(random.uniform(0.2, 0.8))
         await _fire_event(client, callback_url, log_id, "failed")
         return
 
-    # Delivered (95% base)
-    await asyncio.sleep(random.uniform(0.3, 1.0))
+    # 3. Delivered (95%)
+    await asyncio.sleep(random.uniform(0.2, 0.8))
     await _fire_event(client, callback_url, log_id, "delivered")
 
-    # Opened (70% of delivered)
-    if random.random() < 0.70:
-        await asyncio.sleep(random.uniform(0.5, 2.0))
-        await _fire_event(client, callback_url, log_id, "opened")
+    # 4. Read — WhatsApp double blue-tick (50% of delivered)
+    if random.random() < 0.50:
+        await asyncio.sleep(random.uniform(0.3, 1.2))
+        await _fire_event(client, callback_url, log_id, "read")
 
-        # Clicked (30% of opened)
-        if random.random() < 0.30:
-            await asyncio.sleep(random.uniform(0.3, 1.0))
-            await _fire_event(client, callback_url, log_id, "clicked")
+        # 5. Opened (70% of read)
+        if random.random() < 0.70:
+            await asyncio.sleep(random.uniform(0.4, 1.5))
+            await _fire_event(client, callback_url, log_id, "opened")
+
+            # 6. Clicked (30% of opened)
+            if random.random() < 0.30:
+                await asyncio.sleep(random.uniform(0.3, 1.0))
+                await _fire_event(client, callback_url, log_id, "clicked")
+
+                # 7. Converted — "order came because of this communication" (15% of clicked)
+                if random.random() < 0.15:
+                    await asyncio.sleep(random.uniform(1.0, 3.0))
+                    await _fire_event(client, callback_url, log_id, "converted")
 
 
 @app.post("/send")
 async def send_messages(body: SendRequest):
     """
-    Accepts a list of recipients and simulates delivery events concurrently.
-    Fires callbacks to the CRM backend for each event.
+    Accept a list of recipients and simulate delivery events concurrently.
+    Returns immediately; fires callbacks asynchronously.
     """
     asyncio.create_task(_dispatch_all(body))
     return {

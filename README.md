@@ -8,14 +8,15 @@ Reachly is a production-ready, AI-powered CRM platform built for Starbucks India
 
 ## ✨ Features
 
-- 🤖 **5-Agent AI Pipeline** — Strategy → Audience → Content → Channel → Prediction
-- 📊 **Live Campaign Monitor** — Real-time SSE event feed as messages deliver
-- 🎯 **Smart Audience Targeting** — SQL-driven segmentation from customer/order data
+- 🤖 **5-Agent AI Pipeline** — Strategy → Audience → Content → Channel → Prediction, streamed live
+- 📊 **Live Campaign Monitor** — Real-time event feed (sent → delivered → read → opened → clicked → converted)
+- 🎯 **Smart Audience Targeting** — SQL-driven segmentation from natural language goal
 - 💬 **Personalized Content** — AI-generated messages with unique discount codes
-- 📈 **Insights Report** — Natural language post-campaign analysis
+- 📈 **Insights Report** — AI post-campaign analysis, cached to DB, PDF download
+- 🛍 **Conversion Attribution** — Tracks orders attributed to each campaign
 - 🌙 **Light / Dark Mode** — Persisted across sessions
-- 🔐 **Simple Auth Gate** — Username + password login with httpOnly cookie session
-- 📁 **CSV Data Upload** — Upload customers and orders data directly from the UI
+- 🔐 **Simple Auth Gate** — Email + password login with httpOnly cookie session
+- 📁 **CSV Data Upload** — Upload customers and orders data from the UI
 
 ---
 
@@ -23,9 +24,9 @@ Reachly is a production-ready, AI-powered CRM platform built for Starbucks India
 
 ```
 reachly/
-├── frontend/          # Next.js 14 (App Router) + Tailwind + shadcn/ui
+├── frontend/          # Next.js 16 (App Router) + TypeScript
 ├── backend/           # FastAPI (Python 3.11+) — AI agents + API
-├── channel_service/   # FastAPI — async delivery simulation
+├── channel_service/   # FastAPI — async delivery simulation + callbacks
 └── supabase/
     └── migrations/    # PostgreSQL schema SQL files
 ```
@@ -57,11 +58,12 @@ cd Reachly
 2. Run **each migration file** in order:
 
 ```
-supabase/migrations/001_initial_schema.sql   ← Run first
-supabase/migrations/002_add_campaign_name.sql ← Run second
+supabase/migrations/001_initial_schema.sql                    ← Run first
+supabase/migrations/002_add_campaign_name.sql                 ← Run second
+supabase/migrations/003_insights_cache_and_new_statuses.sql   ← Run third
 ```
 
-Simply copy-paste each file's contents into the SQL Editor and click **Run**.
+Copy-paste each file's contents into the SQL Editor and click **Run**.
 
 ---
 
@@ -69,17 +71,13 @@ Simply copy-paste each file's contents into the SQL Editor and click **Run**.
 
 ```bash
 cd backend
-
-# Create virtual environment
 python -m venv .venv
 
-# Activate (Windows)
+# Windows
 .venv\Scripts\activate
-
-# Activate (Mac/Linux)
+# Mac/Linux
 source .venv/bin/activate
 
-# Install dependencies
 pip install -r requirements.txt
 ```
 
@@ -113,14 +111,13 @@ FRONTEND_URL=http://localhost:3000
 
 ```bash
 cd channel_service
-
-# Create virtual environment
 python -m venv .venv
 
-# Activate (Windows)
+# Windows
 .venv\Scripts\activate
+# Mac/Linux
+source .venv/bin/activate
 
-# Install dependencies
 pip install -r requirements.txt
 ```
 
@@ -144,8 +141,6 @@ CRM_CALLBACK_URL=http://localhost:8000/api/events/callback
 
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
 ```
 
@@ -156,13 +151,12 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-# Auth credentials (change these!)
-AUTH_USER=admin
-AUTH_PASS=reachly123
+# Auth credentials
+AUTH_USER=starbucks@gmail.com
+AUTH_PASS=starbucks123
 ```
 
-> **Where to get the anon key:**
-> Supabase Dashboard → Settings → API → `anon` `public` key
+> `NEXT_PUBLIC_SUPABASE_ANON_KEY` → Supabase Dashboard → Settings → API → `anon public` key
 
 **Start the frontend:**
 
@@ -176,25 +170,28 @@ npm run dev
 
 ## 🔐 Logging In
 
-Visit **http://localhost:3000** — you'll be redirected to the Starbucks India login portal.
+Visit **http://localhost:3000** — you'll be redirected to the Reachly login page.
 
-Default credentials:
-- **Username:** `admin`
-- **Password:** `reachly123`
+| Field | Value |
+|-------|-------|
+| **Email** | `starbucks@gmail.com` |
+| **Password** | `starbucks123` |
 
-> Change these by editing `AUTH_USER` and `AUTH_PASS` in `frontend/.env.local` and restarting the frontend.
+> Change by editing `AUTH_USER` and `AUTH_PASS` in `frontend/.env.local` and restarting the frontend.
 
 ---
 
 ## 📋 Running All 3 Services (VS Code)
 
-Open 3 separate terminal tabs in VS Code and run one command per tab:
+Open **3 terminal tabs** and run one per tab:
 
 | Terminal | Command |
 |----------|---------|
 | **Backend** | `cd backend && .venv\Scripts\python.exe -m uvicorn main:app --reload --port 8000` |
 | **Channel Service** | `cd channel_service && .venv\Scripts\python.exe -m uvicorn main:app --reload --port 8001` |
 | **Frontend** | `cd frontend && npm run dev` |
+
+> ⚠️ All 3 must be running for the monitor events to work. If monitor shows all-pending, check channel service is on port 8001.
 
 ---
 
@@ -214,9 +211,33 @@ Results stream live to the **Agent Timeline** via Server-Sent Events (SSE).
 
 ---
 
+## 📡 Communication Delivery Loop
+
+The system models the full real-world message delivery lifecycle:
+
+```
+CRM Backend  ──POST /send──►  Channel Service
+                                    │
+                    ◄──POST /api/events/callback── (per event, async)
+```
+
+**Event funnel per recipient (simulated):**
+
+```
+sent → delivered → read → opened → clicked → converted
+       (5% fail)   (50%)   (70%)    (30%)     (15%)
+```
+
+- **`read`** = WhatsApp double-blue-tick (recipient saw the message)
+- **`converted`** = order attributed to this campaign (*"order came because of this communication"*)
+
+All events are stored in `communication_events` with full audit trail. `communication_logs` tracks the highest-funnel status per recipient.
+
+---
+
 ## 📊 Data Format (CSV Upload)
 
-Upload your data at **Dashboard → Upload CSV Files**.
+Upload at **Dashboard → Import Data**.
 
 ### customers.csv
 ```csv
@@ -230,14 +251,53 @@ id,customer_id,product_name,amount,order_date
 uuid-a,uuid-1,Caramel Latte,380,2024-05-15
 ```
 
-> Need test data? Use ChatGPT with this prompt:
+> Need test data? Use ChatGPT:
 > *"Generate 300 rows of customers.csv and 1200 rows of orders.csv for a Starbucks India CRM. Include tiers (Gold/Silver/Bronze), realistic Indian names, spend range ₹500–₹25000, days_since_last_purchase 1–180."*
+
+---
+
+## ⚖️ Scale Tradeoffs & Design Decisions
+
+> Conscious decisions made for this scope, with notes on production scale.
+
+### Current Architecture
+| What | How | Why |
+|------|-----|-----|
+| DB inserts on approval | Per-recipient round trip (O(n)) | Simple; fine for 300 customers |
+| Channel service dispatch | `asyncio.gather()` on all recipients | Works up to ~5K in-process |
+| Monitor refresh | 3s polling from frontend | Simple, reliable for demo |
+| Event storage | Single `communication_events` table | No partitioning needed at demo scale |
+| Insights | Cached as text in `campaigns.insights_cache` | Avoids re-generating on revisit |
+
+### At 10,000 Customers
+| Problem | Solution |
+|---------|----------|
+| O(n) DB inserts (10K round trips) | Batch insert in 500-row chunks via Supabase bulk API |
+| 10K concurrent coroutines in channel service | `asyncio.Semaphore(100)` to rate-limit concurrent dispatches |
+| Monitor polling (every user polls every 3s) | Switch to WebSocket or SSE push |
+| Event table growth | Partition by `campaign_id` or `occurred_at` |
+
+### At 100,000+ Customers
+| Problem | Solution |
+|---------|----------|
+| Audience query latency | Add DB indexes on `total_spend`, `days_since_last_purchase`, `tier` |
+| Callback throughput (100K events/campaign) | Queue via Redis/SQS + async worker pool |
+| AI latency for every campaign | Cache prompt outputs per campaign_type; LLM only for personalization |
+| Multi-brand SaaS | Add `brand_id` on all tables; Supabase RLS for tenant isolation |
+
+### What Was Deliberately NOT Built
+| Feature | Reason |
+|---------|--------|
+| Real channel integration (Twilio/etc.) | Assignment explicitly wants a stub; correct stubbing is more signal |
+| JWT/OAuth auth | httpOnly cookie is correct scope for a demo CRM |
+| Campaign scheduling | Would use `pg_cron` or a queue; out of scope for this assignment |
+| A/B testing | Easy extension: split audience, track per-variant; not required |
 
 ---
 
 ## 🔄 Switching AI Providers
 
-All AI calls go through `backend/ai_client.py` — swap provider by editing **one file**.
+All AI calls go through `backend/ai_client.py` — swap by editing **one file**.
 
 **OpenAI (current default):**
 ```python
@@ -271,11 +331,9 @@ def generate(prompt: str) -> str:
 
 | Service | Platform | Notes |
 |---------|----------|-------|
-| **Frontend** | [Vercel](https://vercel.com) | Connect GitHub repo, set env vars in Vercel dashboard |
-| **Backend** | [Railway](https://railway.app) | Point to `/backend`, set env vars, exposes a public URL |
-| **Channel Service** | [Railway](https://railway.app) | Point to `/channel_service`, set `CRM_CALLBACK_URL` to backend URL |
-
-Update `NEXT_PUBLIC_API_URL` in Vercel to point to your Railway backend URL.
+| **Frontend** | [Vercel](https://vercel.com) | Connect GitHub, set `NEXT_PUBLIC_API_URL` to Railway backend URL |
+| **Backend** | [Railway](https://railway.app) | Root dir `/backend`, set all env vars |
+| **Channel Service** | [Railway](https://railway.app) | Root dir `/channel_service`, set `CRM_CALLBACK_URL` to backend URL |
 
 ---
 
@@ -283,12 +341,12 @@ Update `NEXT_PUBLIC_API_URL` in Vercel to point to your Railway backend URL.
 
 | Layer | Technology |
 |-------|-----------|
-| **Frontend** | Next.js 16, TypeScript, Tailwind CSS |
+| **Frontend** | Next.js 16, TypeScript |
 | **Backend** | FastAPI, Python 3.11+, Uvicorn |
 | **Database** | Supabase (PostgreSQL) |
-| **AI** | OpenAI GPT-4o-mini (swappable) |
+| **AI** | OpenAI GPT-4o-mini (swappable via `ai_client.py`) |
 | **Streaming** | Server-Sent Events (SSE) |
-| **Auth** | httpOnly cookie, Next.js proxy middleware |
+| **Auth** | httpOnly cookie + Next.js proxy middleware |
 
 ---
 
@@ -296,37 +354,39 @@ Update `NEXT_PUBLIC_API_URL` in Vercel to point to your Railway backend URL.
 
 ```
 backend/
-├── ai_client.py          ← Swap AI provider here
+├── ai_client.py              ← Swap AI provider here (single file)
 ├── agents/
-│   ├── orchestrator.py   ← SSE streaming pipeline
-│   ├── strategy_agent.py
-│   ├── audience_agent.py
-│   ├── content_agent.py
-│   ├── channel_agent.py
-│   └── prediction_agent.py
+│   ├── orchestrator.py       ← SSE streaming multi-agent pipeline
+│   ├── strategy_agent.py     ← Goal classification
+│   ├── audience_agent.py     ← NL → SQL filter → customer query
+│   ├── content_agent.py      ← Message + discount code generation
+│   ├── channel_agent.py      ← Channel selection by CPM
+│   └── prediction_agent.py   ← Performance forecasting
 ├── routers/
-│   ├── campaigns.py      ← Campaign CRUD + agent trigger
-│   ├── data.py           ← CSV upload + stats
-│   └── events.py         ← Delivery callback handler
+│   ├── campaigns.py          ← Campaign CRUD, SSE run, approve, insights (cached)
+│   ├── data.py               ← CSV upload, stats, customer/order list endpoints
+│   └── events.py             ← Delivery callback handler (read + converted)
 └── models/schemas.py
+
+channel_service/
+└── main.py                   ← Async delivery simulation, retry callbacks
 
 frontend/
 ├── app/
-│   ├── dashboard/        ← Stats + data upload
-│   ├── studio/           ← Campaign goal input
-│   ├── campaigns/        ← All campaigns list
-│   ├── timeline/[id]/    ← Live agent timeline
-│   ├── monitor/[id]/     ← Delivery monitor
-│   ├── insights/[id]/    ← AI insights report
-│   └── login/            ← Auth page
+│   ├── dashboard/            ← Stats + clickable customer/order modals
+│   ├── studio/               ← Campaign goal input
+│   ├── campaigns/            ← Vertical campaign list with search
+│   ├── timeline/[id]/        ← Live agent timeline (cached on revisit)
+│   ├── monitor/[id]/         ← Delivery monitor (read + converted events)
+│   ├── insights/[id]/        ← AI insights report (cached, PDF export)
+│   └── login/                ← Reachly branded auth page
 ├── components/
-│   ├── Sidebar.tsx        ← Collapsible nav + user card
-│   ├── ThemeProvider.tsx  ← Light/dark mode context
-│   └── ConditionalLayout.tsx
+│   ├── Sidebar.tsx            ← Collapsible nav + theme toggle
+│   └── ThemeProvider.tsx      ← Light/dark mode context
 ├── lib/
-│   ├── api.ts            ← All fetch calls
-│   └── types.ts          ← TypeScript interfaces
-└── proxy.ts              ← Auth gate middleware
+│   ├── api.ts                ← All API calls (single source of truth)
+│   └── types.ts              ← TypeScript interfaces
+└── proxy.ts                  ← Auth gate middleware
 ```
 
 ---
