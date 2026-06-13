@@ -11,6 +11,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { createCampaign } from "@/lib/api";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -31,7 +32,8 @@ export default function StudioPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [companyName, setCompanyName] = useState("your company");
+  const { user } = useCurrentUser();
+  const companyName = user?.company_name || "your company";
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -39,11 +41,6 @@ export default function StudioPage() {
       const goalParam = params.get("goal");
       if (goalParam) {
         setGoal(goalParam);
-      }
-      
-      const storedCompany = localStorage.getItem("company_name");
-      if (storedCompany) {
-        setCompanyName(storedCompany);
       }
     }
   }, []);
@@ -64,7 +61,7 @@ export default function StudioPage() {
     setLoading(true);
     try {
       const { id } = await createCampaign(goal.trim(), Number(budget), name.trim() || undefined);
-      router.push(`/campaigns`);
+      router.push(`/timeline/${id}`);
     } catch (err: any) {
       setError(err.message || "Failed to create campaign.");
       setLoading(false);

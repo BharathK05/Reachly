@@ -1,5 +1,6 @@
 import io
 import csv
+import uuid
 from datetime import date, datetime, timedelta
 from fastapi import APIRouter, HTTPException, UploadFile, File, Request
 from db.client import get_supabase
@@ -79,9 +80,13 @@ async def upload_data(
         if cid not in last_date_map or order_date_obj > last_date_map[cid]:
             last_date_map[cid] = order_date_obj
 
+        o_id_raw = o.get("id")
+        o_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{tenant_id}_{o_id_raw}")) if o_id_raw else None
+        c_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{tenant_id}_{cid}")) if cid else None
+
         clean_orders.append({
-            "id": f"{tenant_id}_{o.get('id')}" if o.get("id") else None,
-            "customer_id": f"{tenant_id}_{cid}",
+            "id": o_id,
+            "customer_id": c_id,
             "product": o.get("product", "").strip(),
             "qty": qty,
             "price": price,
@@ -94,7 +99,7 @@ async def upload_data(
     clean_customers = []
     for c in customers:
         cid_raw = c.get("id", "").strip()
-        cid = f"{tenant_id}_{cid_raw}" if cid_raw else None
+        cid = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{tenant_id}_{cid_raw}")) if cid_raw else None
         tier_raw = c.get("tier", "").strip()
         tier = tier_raw if tier_raw in valid_tiers else "Bronze"
         cid_key = cid_raw or c.get("name", "").strip()

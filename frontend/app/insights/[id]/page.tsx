@@ -92,7 +92,9 @@ function SnapRow({ label, value, icon, accent }: { label: string; value: string;
 }
 
 const PRINT_STYLE = `@media print {
-  body { background: white !important; color: black !important; }
+  html, body { background: white !important; color: black !important; height: auto !important; overflow: visible !important; }
+  .app-layout { height: auto !important; overflow: visible !important; display: block !important; }
+  .main-content { overflow: visible !important; height: auto !important; padding: 0 !important; }
   .no-print { display: none !important; }
   h1,h2,h3 { color: #111 !important; }
   p,li,td,th { color: #333 !important; }

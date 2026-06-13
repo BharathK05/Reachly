@@ -64,10 +64,9 @@ function DeliveryBar({ label, count, total, color }: { label: string; count: num
       <div style={{ height:8, background:"var(--border)", borderRadius:99, overflow:"hidden" }}>
         <div style={{
           height:"100%", borderRadius:99,
-          background:`linear-gradient(90deg, ${color}, ${color}88)`,
+          background: color,
           width:`${pct}%`,
           transition:"width 0.8s cubic-bezier(0.4,0,0.2,1)",
-          boxShadow:`0 0 8px ${color}55`,
         }} />
       </div>
     </div>
