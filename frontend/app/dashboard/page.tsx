@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { fetchStats, uploadData, fetchCustomers, fetchCustomerDetail, fetchOrders } from "@/lib/api";
 import type { StatsResponse } from "@/lib/types";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 
 const TIER_COLORS: Record<string, string> = {
   Gold: "var(--accent-amber)",
@@ -290,8 +291,10 @@ function DataModal({ type, onClose }: { type: "customers" | "orders"; onClose: (
 // ── Main Dashboard ─────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const { data: stats, error, mutate, isLoading } = useSWR<StatsResponse>("stats", fetchStats, { refreshInterval: 0 });
+  const { user } = useCurrentUser();
   const [modal, setModal] = useState<"customers" | "orders" | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const companyName = user?.company_name || "your company";
 
   const statCards = stats ? [
     { label:"Total Customers", value:stats.customer_count.toLocaleString(), sub:`${stats.inactive_count} inactive (45+ days)`, icon:Users, color:"var(--accent-violet)", modalType:"customers" as const },
@@ -301,7 +304,7 @@ export default function DashboardPage() {
   ] : [];
 
   return (
-    <div style={{ maxWidth:1200 }}>
+    <div className="page-content-wide">
       {/* Header */}
       <div className="page-header" style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
         <div>
@@ -309,7 +312,7 @@ export default function DashboardPage() {
             <div className="page-title">Dashboard</div>
             <span className="tag">Live</span>
           </div>
-          <p className="page-subtitle">Your Starbucks India customer data at a glance.</p>
+          <p className="page-subtitle">Your {companyName} customer data at a glance.</p>
         </div>
         <button id="import-data-btn" className="btn btn-secondary btn-sm" onClick={() => setUploadOpen(true)} style={{ marginTop:4 }}>
           <Upload size={13} /> Import Data
@@ -423,11 +426,44 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Error state — only show if backend truly unavailable */}
       {error && (
-        <div style={{ padding:"12px 16px", background:"var(--accent-rose-dim)", border:"1px solid var(--accent-rose)", borderRadius:"var(--radius-sm)", color:"var(--accent-rose)", fontSize:13 }}>
-          <AlertCircle size={14} style={{ display:"inline", marginRight:6 }} />
-          Failed to load stats. Make sure the backend is running.
-        </div>
+        stats === undefined && (
+          <div style={{
+            border: "1px dashed var(--accent-violet)",
+            borderRadius: "var(--radius)",
+            padding: "48px 32px",
+            textAlign: "center",
+            background: "linear-gradient(135deg, rgba(124,92,252,0.04), rgba(77,166,255,0.04))",
+            marginBottom: 24,
+          }}>
+            <div style={{
+              width: 72, height: 72, borderRadius: 20,
+              background: "linear-gradient(135deg, rgba(124,92,252,0.15), rgba(77,166,255,0.15))",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              margin: "0 auto 20px",
+            }}>
+              <CloudUpload size={32} color="var(--accent-violet)" />
+            </div>
+            <h2 style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: "1.35rem", fontWeight: 800, color: "var(--text-primary)", marginBottom: 10 }}>
+              Welcome to Reachly, {companyName}! 👋
+            </h2>
+            <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 28, maxWidth: 440, margin: "0 auto 28px" }}>
+              Your workspace is ready. Start by importing your customer and orders data to unlock AI-powered campaigns, insights, and analytics.
+            </p>
+            <button
+              id="get-started-import-btn"
+              className="btn btn-primary"
+              onClick={() => setUploadOpen(true)}
+              style={{ fontSize: 14, padding: "12px 28px" }}
+            >
+              <CloudUpload size={15} /> Import Customer Data
+            </button>
+            <p style={{ marginTop: 16, color: "var(--text-muted)", fontSize: 12 }}>
+              Upload customers.csv + orders.csv to get started
+            </p>
+          </div>
+        )
       )}
 
       {/* Upload drawer */}

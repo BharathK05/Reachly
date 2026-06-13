@@ -6,7 +6,7 @@ from agents import strategy_agent, audience_agent, content_agent, channel_agent,
 from db.client import get_supabase
 
 
-async def run_campaign(campaign_id: str, goal: str, budget: float) -> AsyncGenerator[str, None]:
+async def run_campaign(campaign_id: str, goal: str, budget: float, company_name: str = "our company", tenant_id: str = None) -> AsyncGenerator[str, None]:
     """
     Runs all 5 agents sequentially, yielding SSE-formatted strings.
     Each event: data: {"step": ..., "status": ..., "output": ..., ...}
@@ -15,7 +15,13 @@ async def run_campaign(campaign_id: str, goal: str, budget: float) -> AsyncGener
     def sse(payload: dict) -> str:
         return f"data: {json.dumps(payload)}\n\n"
 
-    context: dict = {"goal": goal, "budget": budget, "campaign_id": campaign_id}
+    context: dict = {
+        "goal": goal,
+        "budget": budget,
+        "campaign_id": campaign_id,
+        "company_name": company_name,
+        "tenant_id": tenant_id,
+    }
 
     # ── Step 1: Strategy ─────────────────────────────────────────────────────
     yield sse({"step": "strategy", "status": "active", "output": "Analyzing your goal..."})

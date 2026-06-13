@@ -6,21 +6,22 @@ import re
 def run(context: dict) -> dict:
     """
     Predict campaign performance metrics.
-    context keys: campaign_type, channel, audience_size, message, estimated_cost
+    context keys: campaign_type, channel, audience_size, message, estimated_cost, company_name
     """
     campaign_type = context.get("campaign_type", "Reactivation")
     channel = context.get("channel", "Email")
     audience_size = context.get("audience_size", 0)
     estimated_cost = context.get("estimated_cost", 0)
+    company_name = context.get("company_name", "our company")
 
     prompt = f"""
-You are a campaign analytics expert for Starbucks India.
+You are a campaign analytics expert for {company_name}.
 Campaign Type: {campaign_type}
 Channel: {channel}
 Audience Size: {audience_size}
 Estimated Cost: ₹{estimated_cost}
 
-Predict realistic campaign performance metrics for an Indian QSR/coffee brand.
+Predict realistic campaign performance metrics for this brand.
 Respond ONLY in raw JSON (no markdown, no code fences). Use this exact schema:
 {{
   "open_rate": <float 0-1>,
@@ -45,7 +46,7 @@ Respond ONLY in raw JSON (no markdown, no code fences). Use this exact schema:
             "ctr": 0.12,
             "conversion_rate": 0.05,
             "estimated_conversions": max(1, int(audience_size * 0.05)),
-            "reasoning": "Default estimates based on industry benchmarks for Indian QSR campaigns.",
+            "reasoning": "Default estimates based on industry benchmarks.",
         }
 
     return {"predictions": predictions}

@@ -1,34 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// POST /api/auth — login
+const BACKEND = process.env.BACKEND_URL || "http://localhost:8000";
+
+// POST /api/auth — login (proxies to backend)
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
-  const { username, password } = body;
-
-  const validUser = process.env.AUTH_USER || "admin";
-  const validPass = process.env.AUTH_PASS || "reachly123";
-
-  if (username === validUser && password === validPass) {
-    const response = NextResponse.json({ success: true });
-    response.cookies.set("reachly_auth", "authenticated", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: "/",
+  try {
+    const res = await fetch(`${BACKEND}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     });
-    return response;
-  }
+    const data = await res.json();
 
-  return NextResponse.json(
-    { success: false, message: "Invalid username or password." },
-    { status: 401 }
-  );
+    if (!res.ok) {
+      return NextResponse.json(
+        { success: false, message: data.detail || "Invalid email or password." },
+        { status: res.status }
+      );
+    }
+
+    // Forward the Set-Cookie header from backend to the browser
+    const response = NextResponse.json({ success: true, company_name: data.company_name });
+    const setCookie = res.headers.get("set-cookie");
+    if (setCookie) response.headers.set("set-cookie", setCookie);
+    return response;
+  } catch {
+    return NextResponse.json({ success: false, message: "Connection error." }, { status: 503 });
+  }
 }
 
 // DELETE /api/auth — logout
-export async function DELETE() {
-  const response = NextResponse.json({ success: true });
-  response.cookies.set("reachly_auth", "", { maxAge: 0, path: "/" });
-  return response;
+export async function DELETE(request: NextRequest) {
+  try {
+    const res = await fetch(`${BACKEND}/api/auth/logout`, {
+      method: "DELETE",
+      headers: { cookie: request.headers.get("cookie") || "" },
+    });
+    const response = NextResponse.json({ success: true });
+    const setCookie = res.headers.get("set-cookie");
+    if (setCookie) response.headers.set("set-cookie", setCookie);
+    return response;
+  } catch {
+    return NextResponse.json({ success: false }, { status: 503 });
+  }
 }

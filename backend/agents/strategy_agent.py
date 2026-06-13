@@ -4,13 +4,14 @@ from ai_client import generate
 def run(context: dict) -> dict:
     """
     Classify the campaign goal and return a strategy summary.
-    context keys: goal, budget
+    context keys: goal, budget, company_name
     """
     goal = context.get("goal", "")
     budget = context.get("budget", 0)
+    company_name = context.get("company_name", "our company")
 
     prompt = f"""
-You are a senior CRM strategist for Starbucks India.
+You are a senior CRM strategist for {company_name}.
 A marketing manager has described this campaign goal: "{goal}"
 Budget: ₹{budget}
 

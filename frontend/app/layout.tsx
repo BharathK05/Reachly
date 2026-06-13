@@ -10,6 +10,12 @@ export const metadata: Metadata = {
   keywords: "CRM, AI marketing, Starbucks India, campaign automation",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export default function RootLayout({
   children,
 }: {

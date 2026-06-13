@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import type { InsightsResponse } from "@/lib/types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const PROXY = "/api/proxy";
 
 // ── Proper Markdown → HTML renderer ──────────────────────────────────────────
 function renderMarkdown(md: string): string {
@@ -109,7 +109,7 @@ export default function InsightsPage({ params }: { params: Promise<{ id: string 
 
   // ── On mount, check for cached insights ──────────────────────────────────
   useEffect(() => {
-    fetch(`${BASE_URL}/api/campaigns/${campaignId}/insights`)
+    fetch(`${PROXY}/campaigns/${campaignId}/insights`)
       .then((r) => r.json())
       .then((res) => {
         if (res.cached && res.insights) {
@@ -125,7 +125,7 @@ export default function InsightsPage({ params }: { params: Promise<{ id: string 
     setGenerating(true);
     setError(null);
     try {
-      const res = await fetch(`${BASE_URL}/api/campaigns/${campaignId}/insights`, { method:"POST" });
+      const res = await fetch(`${PROXY}/campaigns/${campaignId}/insights`, { method:"POST" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ detail: res.statusText }));
         throw new Error(err.detail || "Failed to generate insights");
@@ -146,7 +146,7 @@ export default function InsightsPage({ params }: { params: Promise<{ id: string 
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: PRINT_STYLE }} />
-      <div style={{ maxWidth:1100 }}>
+      <div className="page-content-wide">
         {/* Header */}
         <div className="page-header no-print">
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
@@ -205,28 +205,62 @@ export default function InsightsPage({ params }: { params: Promise<{ id: string 
             )}
 
             {data && !generating && (
-              <div className="card" style={{ animation:"fadeIn 0.4s ease" }}>
-                {/* Toolbar */}
-                <div className="no-print" style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20, paddingBottom:14, borderBottom:"1px solid var(--border)" }}>
-                  <div>
-                    <h2 style={{ fontSize:"1rem", marginBottom:2 }}>AI Analysis Report</h2>
-                    {fromCache && <p style={{ fontSize:11.5, color:"var(--text-muted)" }}>Previously generated — regenerate for latest delivery data</p>}
+              <>
+                <div className="card" style={{ animation:"fadeIn 0.4s ease", marginBottom: 20 }}>
+                  {/* Toolbar */}
+                  <div className="no-print" style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20, paddingBottom:14, borderBottom:"1px solid var(--border)" }}>
+                    <div>
+                      <h2 style={{ fontSize:"1rem", marginBottom:2 }}>AI Analysis Report</h2>
+                      {fromCache && <p style={{ fontSize:11.5, color:"var(--text-muted)" }}>Previously generated — regenerate for latest delivery data</p>}
+                    </div>
+                    <div style={{ display:"flex", gap:8 }}>
+                      <button className="btn btn-secondary btn-sm" onClick={handleGenerate} id="regenerate-insights-btn">
+                        <RefreshCw size={12} /> {fromCache ? "Regenerate" : "Regenerate"}
+                      </button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => window.print()} id="download-pdf-btn">
+                        <Download size={12} /> Download PDF
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ display:"flex", gap:8 }}>
-                    <button className="btn btn-secondary btn-sm" onClick={handleGenerate} id="regenerate-insights-btn">
-                      <RefreshCw size={12} /> {fromCache ? "Regenerate" : "Regenerate"}
-                    </button>
-                    <button className="btn btn-secondary btn-sm" onClick={() => window.print()} id="download-pdf-btn">
-                      <Download size={12} /> Download PDF
-                    </button>
-                  </div>
+
+                  {/* Rendered markdown */}
+                  <div style={{ fontSize:13.5, lineHeight:1.7 }}
+                    dangerouslySetInnerHTML={{ __html: renderMarkdown(data.insights || "") }}
+                  />
                 </div>
 
-                {/* Rendered markdown */}
-                <div style={{ fontSize:13.5, lineHeight:1.7 }}
-                  dangerouslySetInnerHTML={{ __html: renderMarkdown(data.insights || "") }}
-                />
-              </div>
+                {/* Next Campaign Recommendation Card */}
+                {data.next_campaign_recommendation && (
+                  <div 
+                    className="card no-print"
+                    style={{
+                      animation: "fadeIn 0.5s ease",
+                      background: "linear-gradient(135deg, var(--bg-card), var(--accent-violet-dim))",
+                      borderColor: "rgba(124,92,252,0.25)",
+                      boxShadow: "var(--shadow-md)",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 8, background: "var(--accent-violet)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <Zap size={14} color="white" />
+                      </div>
+                      <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>What to do next? AI Strategy Recommendation</h3>
+                    </div>
+                    <p style={{ fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)", fontWeight: 500 }}>
+                      {data.next_campaign_recommendation}
+                    </p>
+                    <div style={{ marginTop: 16 }}>
+                      <button 
+                        className="btn btn-primary btn-sm"
+                        onClick={() => router.push(`/studio?goal=${encodeURIComponent(data.next_campaign_recommendation || "")}`)}
+                        style={{ textShadow: "none" }}
+                      >
+                        Create Campaign Studio Draft
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

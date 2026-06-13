@@ -119,7 +119,7 @@ export default function CampaignsPage() {
   });
 
   return (
-    <div style={{ maxWidth:960 }}>
+    <div className="page-content-wide">
       {/* Header */}
       <div className="page-header">
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>

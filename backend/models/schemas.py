@@ -57,3 +57,21 @@ class CommunicationLog(BaseModel):
 class MonitorResponse(BaseModel):
     logs: list[CommunicationLog]
     summary: dict[str, int]
+
+
+# ─── Auth / Tenants ───────────────────────────────────────────────────────────
+
+class TenantRegister(BaseModel):
+    company_name: str
+    email: str
+    password: str
+
+
+class TenantLogin(BaseModel):
+    email: str
+    password: str
+
+
+
+
+

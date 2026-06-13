@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Wand2,
@@ -11,6 +11,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { createCampaign } from "@/lib/api";
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const GOAL_SUGGESTIONS = [
   "Re-engage customers who haven't visited in 45+ days",
@@ -34,6 +36,18 @@ export default function StudioPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const goalParam = params.get("goal");
+      if (goalParam) {
+        setGoal(goalParam);
+      }
+    }
+  }, []);
+
+
+
   const handleLaunch = async () => {
     if (!goal.trim()) { setError("Please describe your campaign goal."); return; }
     if (!budget || Number(budget) <= 0) { setError("Please enter a valid budget."); return; }
@@ -49,7 +63,7 @@ export default function StudioPage() {
   };
 
   return (
-    <div style={{ maxWidth: 760 }}>
+    <div className="page-content-focused">
       {/* Header */}
       <div className="page-header">
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
@@ -69,7 +83,7 @@ export default function StudioPage() {
           <h1 className="page-title">Campaign Studio</h1>
         </div>
         <p className="page-subtitle">
-          Describe your goal in plain English. Reachly's AI agents will handle strategy, audience, content, channel, and predictions — automatically.
+          Describe your goal in plain English. Reachly's AI agents will handle strategy, audience, content, channel, and predictions automatically.
         </p>
       </div>
 
@@ -119,6 +133,8 @@ export default function StudioPage() {
               </button>
             ))}
           </div>
+
+
         </div>
 
         {/* Budget Input */}
@@ -198,9 +214,9 @@ export default function StudioPage() {
 
       {/* How it works */}
       <div className="card" style={{ background: "var(--accent-violet-dim)", borderColor: "rgba(124,92,252,0.2)" }}>
-        <h3 style={{ marginBottom: 16, color: "var(--text-primary)", fontSize: 14 }}>
-          🤖 How the AI agents work
-        </h3>
+        <h2 style={{ marginBottom: 16, color: "var(--text-primary)", fontSize: 14 }}>
+          How the AI agents work
+        </h2>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {[
             { step: "1", title: "Strategy", desc: "Classifies your goal and defines campaign approach" },

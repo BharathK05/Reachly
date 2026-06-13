@@ -10,7 +10,7 @@ import {
 import { getCampaignSSEUrl, approveCampaign } from "@/lib/api";
 import type { AgentEvent, ApprovalSummary } from "@/lib/types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const PROXY = "/api/proxy";
 
 const STEPS = [
   { key:"strategy",   label:"Strategy Agent",   icon:Brain,         desc:"Classifying goal & defining approach" },
@@ -89,7 +89,7 @@ export default function TimelinePage({ params }: { params: Promise<{ id: string 
 
   // ── Load cached campaign data first ────────────────────────────────────────
   useEffect(() => {
-    fetch(`${BASE_URL}/api/campaigns/${campaignId}`)
+    fetch(`${PROXY}/campaigns/${campaignId}`)
       .then((r) => r.json())
       .then((campaign) => {
         const status = campaign.status;
@@ -216,7 +216,7 @@ export default function TimelinePage({ params }: { params: Promise<{ id: string 
   }
 
   return (
-    <div style={{ maxWidth:1100 }}>
+    <div className="page-content-wide">
       {/* Header */}
       <div className="page-header">
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>

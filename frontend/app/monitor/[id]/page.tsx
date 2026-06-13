@@ -123,7 +123,7 @@ export default function MonitorPage({ params }: { params: Promise<{ id: string }
   const sortedLogs = [...logs].reverse();
 
   return (
-    <div style={{ maxWidth:1100 }}>
+    <div className="page-content-wide">
       {/* Header */}
       <div className="page-header">
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>

@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from routers import data, campaigns, events
+from routers import data, campaigns, events, auth
 
 app = FastAPI(title="Reachly CRM API", version="1.0.0")
 
@@ -23,6 +23,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(data.router)
 app.include_router(campaigns.router)
 app.include_router(events.router)

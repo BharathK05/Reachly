@@ -1,8 +1,9 @@
 import io
 import csv
 from datetime import date, datetime, timedelta
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Request
 from db.client import get_supabase
+from auth_utils import get_tenant_from_cookie
 
 router = APIRouter(prefix="/api/data", tags=["data"])
 
@@ -21,15 +22,17 @@ def _parse_date(val: str) -> str | None:
 
 @router.post("/upload")
 async def upload_data(
+    request: Request,
     customers_file: UploadFile = File(...),
     orders_file: UploadFile = File(...),
 ):
     """
-    Accept customers.csv and orders.csv, parse and upsert into Supabase.
+    Accept customers.csv and orders.csv, parse and upsert into Supabase under the current tenant.
     customers.csv expected columns: id, name, email, phone, tier
     orders.csv expected columns: id, customer_id, product, qty, price, order_date
-    Derives: total_spend, order_count, last_purchase_date, days_since_last_purchase per customer.
     """
+    tenant = get_tenant_from_cookie(request)
+    tenant_id = tenant["tenant_id"]
     supabase = get_supabase()
 
     # ── Parse customers.csv ─────────────────────────────────────────────────
@@ -83,6 +86,7 @@ async def upload_data(
             "qty": qty,
             "price": price,
             "order_date": order_date_obj.isoformat(),
+            "tenant_id": tenant_id,
         })
 
     # ── Build customer upsert payload ────────────────────────────────────────
@@ -106,12 +110,12 @@ async def upload_data(
             "order_count": count_map.get(cid_key, 0),
             "last_purchase_date": last_purchase.isoformat() if last_purchase else None,
             "days_since_last_purchase": days_since,
+            "tenant_id": tenant_id,
         })
 
     # ── Upsert customers ─────────────────────────────────────────────────────
     try:
         if clean_customers:
-            # Remove None IDs (will be auto-generated)
             for_insert = []
             for_upsert = []
             for c in clean_customers:
@@ -154,14 +158,18 @@ async def upload_data(
 
 
 @router.get("/stats")
-async def get_stats():
-    """Return aggregate dataset statistics."""
+async def get_stats(request: Request):
+    """Return aggregate dataset statistics for the current tenant."""
+    tenant = get_tenant_from_cookie(request)
+    tenant_id = tenant["tenant_id"]
     supabase = get_supabase()
     try:
-        customers_res = supabase.table("customers").select("id, total_spend, days_since_last_purchase, tier").execute()
+        customers_res = supabase.table("customers").select(
+            "id, total_spend, days_since_last_purchase, tier"
+        ).eq("tenant_id", tenant_id).execute()
         customers = customers_res.data or []
 
-        orders_res = supabase.table("orders").select("id").execute()
+        orders_res = supabase.table("orders").select("id").eq("tenant_id", tenant_id).execute()
         order_count = len(orders_res.data or [])
 
         customer_count = len(customers)
@@ -174,7 +182,9 @@ async def get_stats():
         premium_inactive_count = len(premium_inactive)
 
         # Product breakdown from orders
-        orders_full = supabase.table("orders").select("product, price, qty").execute().data or []
+        orders_full = supabase.table("orders").select("product, price, qty").eq(
+            "tenant_id", tenant_id
+        ).execute().data or []
         product_revenue: dict[str, float] = {}
         for o in orders_full:
             p = o.get("product", "Unknown")
@@ -208,14 +218,15 @@ async def get_stats():
 
 
 @router.get("/customers")
-async def list_customers(search: str = "", limit: int = 100, offset: int = 0):
-    """List customers with optional search across name, email, phone, tier."""
+async def list_customers(request: Request, search: str = "", limit: int = 100, offset: int = 0):
+    """List customers with optional search — scoped to current tenant."""
+    tenant = get_tenant_from_cookie(request)
+    tenant_id = tenant["tenant_id"]
     supabase = get_supabase()
     try:
         query = supabase.table("customers").select(
             "id, name, email, phone, tier, total_spend, order_count, days_since_last_purchase, last_purchase_date"
-        )
-        # Server-side search across name, email, phone
+        ).eq("tenant_id", tenant_id)
         if search:
             query = query.or_(
                 f"name.ilike.%{search}%,email.ilike.%{search}%,phone.ilike.%{search}%,tier.ilike.%{search}%"
@@ -223,8 +234,7 @@ async def list_customers(search: str = "", limit: int = 100, offset: int = 0):
         result = query.order("total_spend", desc=True).range(offset, offset + limit - 1).execute()
         customers = result.data or []
 
-        # Total count (separate query for pagination)
-        count_query = supabase.table("customers").select("id", count="exact")
+        count_query = supabase.table("customers").select("id", count="exact").eq("tenant_id", tenant_id)
         if search:
             count_query = count_query.or_(
                 f"name.ilike.%{search}%,email.ilike.%{search}%,phone.ilike.%{search}%,tier.ilike.%{search}%"
@@ -238,11 +248,15 @@ async def list_customers(search: str = "", limit: int = 100, offset: int = 0):
 
 
 @router.get("/customers/{customer_id}")
-async def get_customer(customer_id: str):
-    """Get a single customer with their recent orders."""
+async def get_customer(customer_id: str, request: Request):
+    """Get a single customer with their recent orders — scoped to current tenant."""
+    tenant = get_tenant_from_cookie(request)
+    tenant_id = tenant["tenant_id"]
     supabase = get_supabase()
     try:
-        cust_res = supabase.table("customers").select("*").eq("id", customer_id).single().execute()
+        cust_res = supabase.table("customers").select("*").eq("id", customer_id).eq(
+            "tenant_id", tenant_id
+        ).single().execute()
         customer = cust_res.data
         if not customer:
             raise HTTPException(status_code=404, detail="Customer not found")
@@ -251,6 +265,7 @@ async def get_customer(customer_id: str):
             supabase.table("orders")
             .select("id, product, qty, price, order_date")
             .eq("customer_id", customer_id)
+            .eq("tenant_id", tenant_id)
             .order("order_date", desc=True)
             .limit(20)
             .execute()
@@ -263,22 +278,22 @@ async def get_customer(customer_id: str):
 
 
 @router.get("/orders")
-async def list_orders(search: str = "", limit: int = 100, offset: int = 0):
-    """List recent orders with customer name."""
+async def list_orders(request: Request, search: str = "", limit: int = 100, offset: int = 0):
+    """List recent orders with customer name — scoped to current tenant."""
+    tenant = get_tenant_from_cookie(request)
+    tenant_id = tenant["tenant_id"]
     supabase = get_supabase()
     try:
-        # Join with customers for name
         query = supabase.table("orders").select(
             "id, product, qty, price, order_date, customer_id, customers(name, tier)"
-        )
+        ).eq("tenant_id", tenant_id)
         if search:
             query = query.ilike("product", f"%{search}%")
         result = query.order("order_date", desc=True).range(offset, offset + limit - 1).execute()
 
-        count_res = supabase.table("orders").select("id", count="exact").execute()
+        count_res = supabase.table("orders").select("id", count="exact").eq("tenant_id", tenant_id).execute()
         total = count_res.count or 0
 
         return {"orders": result.data or [], "total": total}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch orders: {e}")
-

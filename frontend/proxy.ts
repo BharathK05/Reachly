@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+// Routes that don't require authentication
 const PUBLIC_PATHS = ["/login", "/api/auth"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public paths
+  // Allow public paths (login, register, auth API)
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
@@ -20,9 +21,12 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const auth = request.cookies.get("reachly_auth")?.value;
+  // Check for JWT token cookie (new auth system)
+  const jwtToken = request.cookies.get("reachly_token")?.value;
+  // Also accept legacy cookie for backward compat during transition
+  const legacyAuth = request.cookies.get("reachly_auth")?.value;
 
-  if (auth !== "authenticated") {
+  if (!jwtToken && legacyAuth !== "authenticated") {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("from", pathname);
     return NextResponse.redirect(loginUrl);

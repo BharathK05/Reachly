@@ -75,6 +75,7 @@ export interface MonitorResponse {
 
 export interface InsightsResponse {
   insights: string;
+  next_campaign_recommendation?: string;
   campaign_snapshot: {
     goal: string;
     channel: string;

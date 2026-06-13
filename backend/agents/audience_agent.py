@@ -5,13 +5,15 @@ from db.client import get_supabase
 def run(context: dict) -> dict:
     """
     Derive audience filters from the goal, query Supabase, and return customer IDs.
-    context keys: goal, campaign_type, strategy
+    context keys: goal, campaign_type, strategy, company_name, tenant_id
     """
     goal = context.get("goal", "")
     campaign_type = context.get("campaign_type", "")
+    company_name = context.get("company_name", "our company")
+    tenant_id = context.get("tenant_id")
 
     prompt = f"""
-You are a CRM data analyst for Starbucks India.
+You are a CRM data analyst for {company_name}.
 Campaign Type: {campaign_type}
 Goal: "{goal}"
 
@@ -38,9 +40,12 @@ Respond in raw JSON only, no markdown.
     except Exception:
         filters = {"total_spend_min": 5000, "days_since_min": 45}
 
-    # Query Supabase
+    # Query Supabase — scoped to tenant
     supabase = get_supabase()
     query = supabase.table("customers").select("id, name, tier, total_spend, days_since_last_purchase")
+
+    if tenant_id:
+        query = query.eq("tenant_id", tenant_id)
 
     if filters.get("total_spend_min"):
         query = query.gte("total_spend", filters["total_spend_min"])
