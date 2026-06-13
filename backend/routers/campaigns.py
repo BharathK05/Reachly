@@ -212,12 +212,29 @@ async def monitor_campaign(campaign_id: str, request: Request):
         "opened": 0, "clicked": 0, "converted": 0,
         "failed": 0, "pending": 0
     }
+    
+    status_rank = {
+        "pending": 0, "sent": 1, "delivered": 2,
+        "read": 3, "opened": 4, "clicked": 5, "converted": 6,
+        "failed": 99
+    }
+    
     for log in logs:
         status = log.get("status", "pending")
-        if status in summary:
-            summary[status] += 1
-        else:
+        rank = status_rank.get(status, 0)
+        
+        if status == "pending":
             summary["pending"] += 1
+        elif status == "failed":
+            summary["sent"] += 1
+            summary["failed"] += 1
+        else:
+            if rank >= 1: summary["sent"] += 1
+            if rank >= 2: summary["delivered"] += 1
+            if rank >= 3: summary["read"] += 1
+            if rank >= 4: summary["opened"] += 1
+            if rank >= 5: summary["clicked"] += 1
+            if rank >= 6: summary["converted"] += 1
 
     return {"logs": logs, "summary": summary}
 

@@ -82,10 +82,11 @@ function applyInline(text: string): string {
 
 // ── Snapshot Row ──────────────────────────────────────────────────────────────
 function SnapRow({ label, value, icon, accent }: { label: string; value: string; icon: React.ReactNode; accent?: string }) {
+  const isGoal = label === "Goal";
   return (
-    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 0", borderBottom:"1px solid var(--border)" }}>
+    <div style={{ display:"flex", flexDirection: isGoal ? "column" : "row", justifyContent:"space-between", alignItems: isGoal ? "flex-start" : "center", gap: isGoal ? 6 : 0, padding:"8px 0", borderBottom:"1px solid var(--border)" }}>
       <div style={{ display:"flex", alignItems:"center", gap:7, color:"var(--text-secondary)", fontSize:12.5 }}>{icon} {label}</div>
-      <span style={{ fontWeight:700, color: accent || "var(--text-primary)", fontSize:13 }}>{value}</span>
+      <span style={{ fontWeight:700, color: accent || "var(--text-primary)", fontSize:13, lineHeight: isGoal ? 1.4 : undefined }}>{value}</span>
     </div>
   );
 }
@@ -265,13 +266,13 @@ export default function InsightsPage({ params }: { params: Promise<{ id: string 
           </div>
 
           {/* ── Snapshot Sidebar ── */}
-          <div style={{ width:280, flexShrink:0 }}>
+          <div style={{ width:280, flexShrink:0 }} className="no-print">
             <div className="card" style={{ position:"sticky", top:0 }}>
               <h3 style={{ marginBottom:14, fontSize:13.5, fontWeight:700 }}>Campaign Snapshot</h3>
 
               {snap ? (
                 <>
-                  <SnapRow label="Goal"      value={snap.goal.length > 38 ? snap.goal.slice(0, 38) + "…" : snap.goal} icon={<Zap size={13} />} />
+                  <SnapRow label="Goal"      value={snap.goal} icon={<Zap size={13} />} />
                   <SnapRow label="Channel"   value={snap.channel}                     icon={<Radio size={13} />} />
                   <SnapRow label="Audience"  value={`${snap.audience_size} people`}   icon={<Users size={13} />} />
                   <SnapRow label="Budget"    value={`₹${Number(snap.budget).toLocaleString()}`} icon={<DollarSign size={13} />} />

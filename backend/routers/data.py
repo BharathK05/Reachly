@@ -80,8 +80,8 @@ async def upload_data(
             last_date_map[cid] = order_date_obj
 
         clean_orders.append({
-            "id": o.get("id") or None,
-            "customer_id": cid,
+            "id": f"{tenant_id}_{o.get('id')}" if o.get("id") else None,
+            "customer_id": f"{tenant_id}_{cid}",
             "product": o.get("product", "").strip(),
             "qty": qty,
             "price": price,
@@ -93,10 +93,11 @@ async def upload_data(
     valid_tiers = {"Gold", "Silver", "Bronze"}
     clean_customers = []
     for c in customers:
-        cid = c.get("id", "").strip() or None
+        cid_raw = c.get("id", "").strip()
+        cid = f"{tenant_id}_{cid_raw}" if cid_raw else None
         tier_raw = c.get("tier", "").strip()
         tier = tier_raw if tier_raw in valid_tiers else "Bronze"
-        cid_key = cid or c.get("name", "").strip()
+        cid_key = cid_raw or c.get("name", "").strip()
         last_purchase = last_date_map.get(cid_key)
         days_since = (today - last_purchase).days if last_purchase else None
 

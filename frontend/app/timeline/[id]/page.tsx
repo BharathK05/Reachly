@@ -7,7 +7,7 @@ import {
   CheckCircle2, Loader2, AlertCircle, ChevronRight, Zap,
   Clock, Send, RefreshCw, Eye,
 } from "lucide-react";
-import { getCampaignSSEUrl, approveCampaign } from "@/lib/api";
+import { getCampaignSSEUrl, approveCampaign, deleteCampaign } from "@/lib/api";
 import type { AgentEvent, ApprovalSummary } from "@/lib/types";
 
 const PROXY = "/api/proxy";
@@ -384,19 +384,43 @@ export default function TimelinePage({ params }: { params: Promise<{ id: string 
                   </button>
                 </div>
               ) : (
-                <button
-                  id="approve-launch-btn"
-                  className="btn btn-success"
-                  onClick={handleApprove}
-                  disabled={approving}
-                  style={{ width:"100%", marginTop:8 }}
-                >
-                  {approving ? (
-                    <><Loader2 size={15} className="animate-spin" /> Dispatching…</>
-                  ) : (
-                    <><Send size={15} /> Approve & Launch <ChevronRight size={14} /></>
-                  )}
-                </button>
+                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                  <button
+                    id="approve-launch-btn"
+                    className="btn btn-success"
+                    onClick={handleApprove}
+                    disabled={approving}
+                    style={{ flex: 1 }}
+                  >
+                    {approving ? (
+                      <><Loader2 size={15} className="animate-spin" /> Dispatching…</>
+                    ) : (
+                      <><Send size={15} /> Approve & Launch <ChevronRight size={14} /></>
+                    )}
+                  </button>
+                  <button
+                    id="cancel-campaign-btn"
+                    className="btn btn-secondary"
+                    onClick={async () => {
+                      if (confirm("Are you sure you want to cancel this campaign?")) {
+                        try {
+                          await deleteCampaign(campaignId);
+                          router.push('/campaigns');
+                        } catch (e) {
+                          alert("Failed to cancel campaign");
+                        }
+                      }
+                    }}
+                    disabled={approving}
+                    style={{
+                      background: "transparent",
+                      color: "var(--accent-rose)",
+                      borderColor: "var(--accent-rose)",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
               )}
             </div>
           </div>

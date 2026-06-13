@@ -14,12 +14,7 @@ import { createCampaign } from "@/lib/api";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-const GOAL_SUGGESTIONS = [
-  "Re-engage customers who haven't visited in 45+ days",
-  "Boost Gold tier loyalty with an exclusive offer",
-  "Promote our new Cold Brew range to frequent buyers",
-  "Win back high-spend customers with a premium discount",
-];
+
 
 const BUDGET_PRESETS = [
   { label: "₹2K", value: 2000 },
@@ -36,6 +31,8 @@ export default function StudioPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [companyName, setCompanyName] = useState("your company");
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -43,8 +40,20 @@ export default function StudioPage() {
       if (goalParam) {
         setGoal(goalParam);
       }
+      
+      const storedCompany = localStorage.getItem("company_name");
+      if (storedCompany) {
+        setCompanyName(storedCompany);
+      }
     }
   }, []);
+
+  const goalSuggestions = [
+    "Re-engage customers who haven't visited in 45+ days",
+    `Boost ${companyName} Gold tier loyalty with an exclusive offer`,
+    `Promote our new ${companyName} range to frequent buyers`,
+    "Win back high-spend customers with a premium discount",
+  ];
 
 
 
@@ -55,7 +64,7 @@ export default function StudioPage() {
     setLoading(true);
     try {
       const { id } = await createCampaign(goal.trim(), Number(budget), name.trim() || undefined);
-      router.push(`/timeline/${id}`);
+      router.push(`/campaigns`);
     } catch (err: any) {
       setError(err.message || "Failed to create campaign.");
       setLoading(false);
@@ -121,7 +130,7 @@ export default function StudioPage() {
 
           {/* Suggestion Chips */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-            {GOAL_SUGGESTIONS.map((s) => (
+            {goalSuggestions.map((s) => (
               <button
                 key={s}
                 className={`chip ${goal === s ? "active" : ""}`}
@@ -205,7 +214,7 @@ export default function StudioPage() {
           ) : (
             <>
               <Zap size={18} />
-              Launch AI Campaign Agent
+              Generate Campaign Draft
               <ChevronRight size={18} />
             </>
           )}
