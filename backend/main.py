@@ -32,3 +32,7 @@ app.include_router(events.router)
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "reachly-backend"}
+
+@app.get("/")
+async def root():
+    return {"status": "alive"}

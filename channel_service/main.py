@@ -123,3 +123,7 @@ async def _dispatch_all(body: SendRequest):
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "reachly-channel-service"}
+
+@app.get("/")
+async def root():
+    return {"status": "alive"}
