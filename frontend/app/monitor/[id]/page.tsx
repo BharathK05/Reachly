@@ -127,14 +127,12 @@ export default function MonitorPage({ params }: { params: Promise<{ id: string }
       <div className="page-header">
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
           <button onClick={() => router.back()} className="btn btn-secondary btn-sm" id="monitor-back-btn"><ArrowLeft size={14} /></button>
-          <Radio size={20} color="var(--accent-green)" />
-          <h1 className="page-title" style={{ fontSize:"1.5rem" }}>Live Monitor</h1>
-          <span className="badge badge-green" style={{ animation:"pulse-ring 2s infinite" }}>Live</span>
+          <h1 className="page-title" style={{ fontSize:"1.5rem" }}>
+            <Radio className="text-accent-violet" size={24} style={{ display: "inline", verticalAlign: "middle", marginRight: 8 }} />
+            Live Monitor <span className="badge badge-green ml-2" style={{ animation:"pulse-ring 2s infinite" }}>Live</span>
+          </h1>
         </div>
-        <p className="page-subtitle">
-          Real-time delivery tracking · refreshes every 3s ·{" "}
-          <code style={{ fontSize:11, color:"var(--text-muted)" }}>{campaignId}</code>
-        </p>
+        <p className="page-subtitle">Real-time delivery tracking · refreshes every 3s</p>
       </div>
 
       {/* All-pending warning with retry button */}

@@ -163,7 +163,7 @@ export default function InsightsPage({ params }: { params: Promise<{ id: string 
             )}
           </div>
           <p className="page-subtitle">
-            AI-generated analysis · <code style={{ fontSize:11, color:"var(--text-muted)" }}>{campaignId}</code>
+            AI-generated analysis
           </p>
         </div>
 

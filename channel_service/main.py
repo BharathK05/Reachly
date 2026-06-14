@@ -90,8 +90,8 @@ async def _simulate_recipient(client: httpx.AsyncClient, callback_url: str, reci
                 await asyncio.sleep(random.uniform(0.3, 1.0))
                 await _fire_event(client, callback_url, log_id, "clicked")
 
-                # 7. Converted — "order came because of this communication" (15% of clicked)
-                if random.random() < 0.15:
+                # 7. Converted — "order came because of this communication" (60% of clicked)
+                if random.random() < 0.60:
                     await asyncio.sleep(random.uniform(1.0, 3.0))
                     await _fire_event(client, callback_url, log_id, "converted")
 
