@@ -259,158 +259,105 @@ function AuthPage() {
     <div style={{
       minHeight: "100vh",
       display: "flex",
-      background: "var(--bg-base)",
+      alignItems: "center",
+      justifyContent: "center",
+      background: "linear-gradient(135deg, #090714 0%, #1a123a 50%, #090714 100%)",
       position: "relative",
       overflow: "hidden",
+      padding: 20,
     }}>
-      {/* Left branding panel */}
+      {/* Stunning Animated Background Orbs */}
+      <div style={{ position:"absolute", top:"-10%", left:"-10%", width:"50vw", height:"50vw", borderRadius:"50%", background:"radial-gradient(circle, rgba(124,92,252,0.3) 0%, transparent 70%)", filter:"blur(80px)", animation:"floatOrb 10s infinite ease-in-out alternate" }} />
+      <div style={{ position:"absolute", bottom:"-10%", right:"-10%", width:"60vw", height:"60vw", borderRadius:"50%", background:"radial-gradient(circle, rgba(77,166,255,0.2) 0%, transparent 70%)", filter:"blur(100px)", animation:"floatOrb 12s infinite ease-in-out alternate-reverse" }} />
+      <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%, -50%)", width:"100%", height:"100%", backgroundImage:`radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)`, backgroundSize:"40px 40px", pointerEvents:"none" }} />
+
+      <style>{`
+        @keyframes floatOrb {
+          0% { transform: translateY(0px) scale(1); }
+          100% { transform: translateY(-40px) scale(1.05); }
+        }
+      `}</style>
+
+      {/* Main Login Card */}
       <div style={{
-        flex: 1,
+        width: "100%",
+        maxWidth: 440,
+        background: "rgba(15, 12, 31, 0.6)",
+        backdropFilter: "blur(40px)",
+        WebkitBackdropFilter: "blur(40px)",
+        border: "1px solid rgba(255,255,255,0.08)",
+        borderRadius: 32,
+        padding: "48px 40px",
+        boxShadow: "0 24px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)",
+        zIndex: 1,
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 48,
-        position: "relative",
-        background: "linear-gradient(160deg, #060410 0%, #110d2b 50%, #060410 100%)",
       }}>
-        {/* Glow effects & Grid */}
-        <div style={{ position:"absolute", top:-150, left:-150, width:600, height:600, borderRadius:"50%", background:"radial-gradient(circle, rgba(124,92,252,0.15) 0%, transparent 60%)", pointerEvents:"none", filter:"blur(50px)" }} />
-        <div style={{ position:"absolute", bottom:-150, right:-150, width:500, height:500, borderRadius:"50%", background:"radial-gradient(circle, rgba(77,166,255,0.1) 0%, transparent 60%)", pointerEvents:"none", filter:"blur(50px)" }} />
-        <div style={{ position:"absolute", top:0, left:0, width:"100%", height:"100%", backgroundImage:`radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)`, backgroundSize:"32px 32px", pointerEvents:"none" }} />
-
-        {/* Glassmorphic Content Card */}
-        <div style={{
-          textAlign:"left", zIndex:1, width:"100%", maxWidth:420,
-          background:"rgba(20, 16, 41, 0.4)",
-          backdropFilter:"blur(24px)",
-          WebkitBackdropFilter:"blur(24px)",
-          border:"1px solid rgba(255,255,255,0.08)",
-          borderRadius:24,
-          padding:40,
-          boxShadow:"0 24px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)",
-        }}>
-          {/* Header */}
-          <div style={{ display:"flex", alignItems:"center", gap:16, marginBottom:32 }}>
-            <div style={{
-              width:48, height:48, borderRadius:14,
-              background:"linear-gradient(135deg, #7c5cfc, #4da6ff)",
-              display:"flex", alignItems:"center", justifyContent:"center",
-              boxShadow:"0 8px 24px rgba(124,92,252,0.4), inset 0 2px 4px rgba(255,255,255,0.3)",
-              flexShrink:0,
-            }}>
-              <Zap size={22} color="white" />
-            </div>
-            <div>
-              <h1 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:"1.8rem", fontWeight:800, color:"#fff", letterSpacing:"-0.02em", lineHeight:1.2 }}>
-                Reachly
-              </h1>
-              <p style={{ color:"rgba(255,255,255,0.5)", fontSize:12, letterSpacing:"0.08em", textTransform:"uppercase", fontWeight:600, marginTop:2 }}>
-                AI-Native CRM Platform
-              </p>
-            </div>
+        
+        {/* Logo Header */}
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", marginBottom:32 }}>
+          <div style={{
+            width:56, height:56, borderRadius:16,
+            background:"linear-gradient(135deg, #7c5cfc, #4da6ff)",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            boxShadow:"0 8px 24px rgba(124,92,252,0.4), inset 0 2px 4px rgba(255,255,255,0.3)",
+            marginBottom:16,
+          }}>
+            <Zap size={28} color="white" />
           </div>
-
-          <p style={{ color:"rgba(255,255,255,0.8)", fontSize:14.5, lineHeight:1.6, marginBottom:36, fontWeight:500 }}>
-            Supercharge your customer engagement with autonomous AI agents that analyze, target, and convert automatically.
-          </p>
-
-          {/* Feature list */}
-          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-            {[
-              { text: "5 autonomous AI agents.", icon: Brain, color: "#7c5cfc" },
-              { text: "Real-time campaign delivery.", icon: Sparkles, color: "#4da6ff" },
-              { text: "Natural language targeting.", icon: MessageSquare, color: "#f5a623" },
-              { text: "Multi-tenant & deeply secure.", icon: ShieldCheck, color: "#10b981" },
-            ].map(({ text, icon: Icon, color }, i) => (
-              <div key={i} style={{
-                display:"flex", alignItems:"center", gap:14,
-                padding:"14px 18px", borderRadius:16,
-                background:"rgba(0,0,0,0.2)",
-                border:"1px solid rgba(255,255,255,0.04)",
-                transition:"all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-                cursor:"default",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(255,255,255,0.04)";
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
-                e.currentTarget.style.transform = "translateX(6px)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(0,0,0,0.2)";
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.04)";
-                e.currentTarget.style.transform = "translateX(0)";
-              }}
-              >
-                <div style={{ width:32, height:32, borderRadius:10, background:`${color}22`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                  <Icon size={16} color={color} />
-                </div>
-                <span style={{ color:"rgba(255,255,255,0.9)", fontSize:13.5, fontWeight:600 }}>{text}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Right form panel */}
-      <div style={{
-        width: 460,
-        flexShrink: 0,
-        background: "var(--bg-surface)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "56px 48px",
-        borderLeft: "1px solid var(--border)",
-        overflowY: "auto",
-      }}>
-        <div style={{ width: "100%", maxWidth: 360 }}>
-          {/* Tab switcher */}
-          <div style={{ display: "flex", gap: 4, marginBottom: 32, background: "var(--bg-card)", borderRadius: "var(--radius-sm)", padding: 4 }}>
-            {(["login", "register"] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => setMode(m)}
-                style={{
-                  flex: 1,
-                  padding: "8px 0",
-                  borderRadius: "var(--radius-xs)",
-                  border: "none",
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  transition: "all 0.2s ease",
-                  background: mode === m ? "var(--accent-violet)" : "transparent",
-                  color: mode === m ? "white" : "var(--text-secondary)",
-                }}
-              >
-                {m === "login" ? "Sign In" : "Create Account"}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ marginBottom: 28 }}>
-            <h2 style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: "1.5rem", fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.02em", marginBottom: 6 }}>
-              {mode === "login" ? "Welcome back" : "Get started free"}
-            </h2>
-            <p style={{ color: "var(--text-secondary)", fontSize: 13.5 }}>
-              {mode === "login"
-                ? "Sign in to your Reachly workspace"
-                : "Create your company's AI-powered CRM"}
-            </p>
-          </div>
-
-          {mode === "login"
-            ? <LoginForm onSwitch={() => setMode("register")} />
-            : <RegisterForm onSwitch={() => setMode("login")} />
-          }
-
-          <p style={{ marginTop: 32, textAlign: "center", fontSize: 11.5, color: "var(--text-muted)" }}>
-            Powered by <span style={{ fontWeight: 700, color: "var(--text-secondary)" }}>Reachly</span> · v1.0
+          <h1 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:"1.8rem", fontWeight:800, color:"#fff", letterSpacing:"-0.02em", marginBottom:4 }}>
+            Reachly
+          </h1>
+          <p style={{ color:"rgba(255,255,255,0.5)", fontSize:12.5, letterSpacing:"0.06em", textTransform:"uppercase", fontWeight:600 }}>
+            AI-Native CRM Platform
           </p>
         </div>
+
+        {/* Tab switcher */}
+        <div style={{ display: "flex", gap: 4, marginBottom: 32, background: "rgba(0,0,0,0.3)", border:"1px solid rgba(255,255,255,0.05)", borderRadius: "var(--radius-sm)", padding: 4 }}>
+          {(["login", "register"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              style={{
+                flex: 1,
+                padding: "10px 0",
+                borderRadius: "var(--radius-xs)",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                fontSize: 13.5,
+                fontWeight: 600,
+                transition: "all 0.2s ease",
+                background: mode === m ? "linear-gradient(135deg, #7c5cfc, #6b4de0)" : "transparent",
+                color: mode === m ? "white" : "rgba(255,255,255,0.5)",
+                boxShadow: mode === m ? "0 4px 12px rgba(124,92,252,0.3)" : "none",
+              }}
+            >
+              {m === "login" ? "Sign In" : "Create Account"}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ marginBottom: 28, textAlign:"center" }}>
+          <h2 style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: "1.4rem", fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.02em", marginBottom: 6 }}>
+            {mode === "login" ? "Welcome back" : "Get started free"}
+          </h2>
+          <p style={{ color: "var(--text-secondary)", fontSize: 13.5 }}>
+            {mode === "login"
+              ? "Sign in to your Reachly workspace"
+              : "Create your company's AI-powered CRM"}
+          </p>
+        </div>
+
+        {mode === "login"
+          ? <LoginForm onSwitch={() => setMode("register")} />
+          : <RegisterForm onSwitch={() => setMode("login")} />
+        }
+
+        <p style={{ marginTop: 32, textAlign: "center", fontSize: 11.5, color: "rgba(255,255,255,0.3)" }}>
+          Powered by <span style={{ fontWeight: 700, color: "rgba(255,255,255,0.5)" }}>Reachly</span> · v1.0
+        </p>
       </div>
     </div>
   );
