@@ -405,7 +405,7 @@ export default function TimelinePage({ params }: { params: Promise<{ id: string 
                       if (confirm("Are you sure you want to cancel this campaign?")) {
                         try {
                           await deleteCampaign(campaignId);
-                          window.location.href = '/campaigns';
+                          router.push('/campaigns');
                         } catch (e) {
                           alert("Failed to cancel campaign");
                         }
