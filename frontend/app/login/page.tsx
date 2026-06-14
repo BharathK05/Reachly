@@ -313,32 +313,6 @@ function AuthPage() {
           </p>
         </div>
 
-        {/* Tab switcher */}
-        <div style={{ display: "flex", gap: 4, marginBottom: 32, background: "rgba(0,0,0,0.3)", border:"1px solid rgba(255,255,255,0.05)", borderRadius: "var(--radius-sm)", padding: 4 }}>
-          {(["login", "register"] as const).map((m) => (
-            <button
-              key={m}
-              onClick={() => setMode(m)}
-              style={{
-                flex: 1,
-                padding: "10px 0",
-                borderRadius: "var(--radius-xs)",
-                border: "none",
-                cursor: "pointer",
-                fontFamily: "inherit",
-                fontSize: 13.5,
-                fontWeight: 600,
-                transition: "all 0.2s ease",
-                background: mode === m ? "linear-gradient(135deg, #7c5cfc, #6b4de0)" : "transparent",
-                color: mode === m ? "white" : "rgba(255,255,255,0.5)",
-                boxShadow: mode === m ? "0 4px 12px rgba(124,92,252,0.3)" : "none",
-              }}
-            >
-              {m === "login" ? "Sign In" : "Create Account"}
-            </button>
-          ))}
-        </div>
-
         <div style={{ marginBottom: 28, textAlign:"center" }}>
           <h2 style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: "1.4rem", fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.02em", marginBottom: 6 }}>
             {mode === "login" ? "Welcome back" : "Get started free"}
