@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Eye, EyeOff, Loader2, Zap, UserPlus, LogIn } from "lucide-react";
+import { Eye, EyeOff, Loader2, Zap, UserPlus, LogIn, Brain, Sparkles, MessageSquare, ShieldCheck } from "lucide-react";
 
 // ── Shared field styles ──────────────────────────────────────────────────────
 const fieldStyle: React.CSSProperties = { display: "flex", flexDirection: "column", gap: 6 };
@@ -272,46 +272,83 @@ function AuthPage() {
         justifyContent: "center",
         padding: 48,
         position: "relative",
-        background: "linear-gradient(160deg, #0a0818 0%, #13103a 50%, #0a0818 100%)",
+        background: "linear-gradient(160deg, #060410 0%, #110d2b 50%, #060410 100%)",
       }}>
-        {/* Glow effects */}
-        <div style={{ position:"absolute", top:-120, left:-120, width:480, height:480, borderRadius:"50%", background:"radial-gradient(circle, rgba(124,92,252,0.2) 0%, transparent 70%)", pointerEvents:"none" }} />
-        <div style={{ position:"absolute", bottom:-80, right:-80, width:360, height:360, borderRadius:"50%", background:"radial-gradient(circle, rgba(77,166,255,0.12) 0%, transparent 70%)", pointerEvents:"none" }} />
+        {/* Glow effects & Grid */}
+        <div style={{ position:"absolute", top:-150, left:-150, width:600, height:600, borderRadius:"50%", background:"radial-gradient(circle, rgba(124,92,252,0.15) 0%, transparent 60%)", pointerEvents:"none", filter:"blur(50px)" }} />
+        <div style={{ position:"absolute", bottom:-150, right:-150, width:500, height:500, borderRadius:"50%", background:"radial-gradient(circle, rgba(77,166,255,0.1) 0%, transparent 60%)", pointerEvents:"none", filter:"blur(50px)" }} />
+        <div style={{ position:"absolute", top:0, left:0, width:"100%", height:"100%", backgroundImage:`radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)`, backgroundSize:"32px 32px", pointerEvents:"none" }} />
 
-        <div style={{ textAlign:"center", zIndex:1 }}>
-          {/* Logo */}
-          <div style={{
-            width:80, height:80, borderRadius:20,
-            background:"linear-gradient(135deg, #7c5cfc, #4da6ff)",
-            display:"flex", alignItems:"center", justifyContent:"center",
-            margin:"0 auto 28px",
-            boxShadow:"0 0 0 12px rgba(124,92,252,0.12), 0 16px 48px rgba(124,92,252,0.4)",
-          }}>
-            <Zap size={38} color="white" />
+        {/* Glassmorphic Content Card */}
+        <div style={{
+          textAlign:"left", zIndex:1, width:"100%", maxWidth:420,
+          background:"rgba(20, 16, 41, 0.4)",
+          backdropFilter:"blur(24px)",
+          WebkitBackdropFilter:"blur(24px)",
+          border:"1px solid rgba(255,255,255,0.08)",
+          borderRadius:24,
+          padding:40,
+          boxShadow:"0 24px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)",
+        }}>
+          {/* Header */}
+          <div style={{ display:"flex", alignItems:"center", gap:16, marginBottom:32 }}>
+            <div style={{
+              width:48, height:48, borderRadius:14,
+              background:"linear-gradient(135deg, #7c5cfc, #4da6ff)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              boxShadow:"0 8px 24px rgba(124,92,252,0.4), inset 0 2px 4px rgba(255,255,255,0.3)",
+              flexShrink:0,
+            }}>
+              <Zap size={22} color="white" />
+            </div>
+            <div>
+              <h1 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:"1.8rem", fontWeight:800, color:"#fff", letterSpacing:"-0.02em", lineHeight:1.2 }}>
+                Reachly
+              </h1>
+              <p style={{ color:"rgba(255,255,255,0.5)", fontSize:12, letterSpacing:"0.08em", textTransform:"uppercase", fontWeight:600, marginTop:2 }}>
+                AI-Native CRM Platform
+              </p>
+            </div>
           </div>
 
-          <h1 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:"2.4rem", fontWeight:800, color:"#fff", letterSpacing:"-0.02em", marginBottom:10 }}>
-            Reachly
-          </h1>
-          <p style={{ color:"rgba(255,255,255,0.45)", fontSize:13.5, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:48 }}>
-            AI-Native CRM Platform
+          <p style={{ color:"rgba(255,255,255,0.8)", fontSize:14.5, lineHeight:1.6, marginBottom:36, fontWeight:500 }}>
+            Supercharge your customer engagement with autonomous AI agents that analyze, target, and convert automatically.
           </p>
 
-          {/* Feature pills */}
-          {["5 AI agents. One goal.", "Real-time campaign delivery.", "Natural language targeting.", "Multi-tenant & secure."].map((t) => (
-            <div key={t} style={{
-              display:"inline-flex", alignItems:"center", gap:8,
-              padding:"8px 18px", borderRadius:99,
-              background:"rgba(124,92,252,0.12)",
-              border:"1px solid rgba(124,92,252,0.25)",
-              color:"rgba(255,255,255,0.75)",
-              fontSize:13, fontWeight:500,
-              marginBottom:10, width:"100%", justifyContent:"center",
-            }}>
-              <div style={{ width:6, height:6, borderRadius:"50%", background:"#7c5cfc" }} />
-              {t}
-            </div>
-          ))}
+          {/* Feature list */}
+          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            {[
+              { text: "5 autonomous AI agents.", icon: Brain, color: "#7c5cfc" },
+              { text: "Real-time campaign delivery.", icon: Sparkles, color: "#4da6ff" },
+              { text: "Natural language targeting.", icon: MessageSquare, color: "#f5a623" },
+              { text: "Multi-tenant & deeply secure.", icon: ShieldCheck, color: "#10b981" },
+            ].map(({ text, icon: Icon, color }, i) => (
+              <div key={i} style={{
+                display:"flex", alignItems:"center", gap:14,
+                padding:"14px 18px", borderRadius:16,
+                background:"rgba(0,0,0,0.2)",
+                border:"1px solid rgba(255,255,255,0.04)",
+                transition:"all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+                cursor:"default",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                e.currentTarget.style.transform = "translateX(6px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(0,0,0,0.2)";
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.04)";
+                e.currentTarget.style.transform = "translateX(0)";
+              }}
+              >
+                <div style={{ width:32, height:32, borderRadius:10, background:`${color}22`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <Icon size={16} color={color} />
+                </div>
+                <span style={{ color:"rgba(255,255,255,0.9)", fontSize:13.5, fontWeight:600 }}>{text}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
